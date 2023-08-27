@@ -10,6 +10,8 @@ import { GetStaticProps, InferGetStaticPropsType } from 'next';
 import path from 'path';
 import { promises as fs } from 'fs';
 
+import type { Metadata } from 'next';
+
 
 const mapboxgl = require("mapbox-gl/dist/mapbox-gl.js");
 
@@ -212,4 +214,9 @@ export const getStaticProps: GetStaticProps<{ students: Student[], schools: Scho
       schools: JSON.parse(schools)
     }
   }
+}
+
+export const metadata: Metadata = {
+  title: 'Blair Magnet Class of \'23 Destinations',
+  description: 'A map of where the Blair Magnet Class of 2023 is going to college!!',
 }
