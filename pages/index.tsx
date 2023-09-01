@@ -228,7 +228,7 @@ export const getStaticProps: GetStaticProps<{ students: Student[], schools: Scho
 
   return {
     props: {
-      students: JSON.parse(students),
+      students: JSON.parse(students).sort((a: Student,b: Student) => a.name.localeCompare(b.name)),
       schools: JSON.parse(schools)
     }
   }
