@@ -49,17 +49,35 @@ const raleway = Raleway({ subsets: ['latin'] })
 
 export default function Home({ students, schools } : InferGetStaticPropsType<typeof getStaticProps>) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [windowSize, setWindowSize] = useState<[number | undefined, number | undefined]>([undefined, undefined]);
+
   const map = useRef(null);
   const mapInstance = useRef<any>(null);
   mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
   useEffect(() => {
+    const handleResize = () => {
+      setWindowSize([window.innerWidth, window.innerHeight]);
+    }
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, [])
+
+  useEffect(() => {
+    console.log(windowSize)
+    if (!(windowSize[0] && windowSize[1])) return; 
+
+    const zoom = 0.00353*windowSize[0];
+    console.log(zoom)
     if (mapInstance.current) return;
     mapInstance.current = new mapboxgl.Map({
       container: map.current,
       style: 'mapbox://styles/mapbox/light-v10',
-      center: [-92.032, 38],
-      zoom: 3.8,
+      center: [-92.032, 39 + 2*(windowSize[1]/windowSize[0]-1)],
+      zoom: 3.8*(0.65*(windowSize[0]/1500-1)+1),
       attributionControl: false,
       logoPosition: 'top-left'
     }).addControl(new mapboxgl.AttributionControl({
@@ -69,9 +87,7 @@ export default function Home({ students, schools } : InferGetStaticPropsType<typ
 
     for (const school of schools) {
       if (school.coords === null) continue;
-      console.log(school)
       let studentList = students.filter((s) => s.school_id === school.id).map((s) => `<li>${s.name}</li>`).join('')
-      console.log(studentList)
       let marker = new mapboxgl.Marker({ color: 'black' })
         .setLngLat(school.coords)
         .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`<b>${school.name}</b><ul>${studentList}</ul>`))
@@ -82,7 +98,7 @@ export default function Home({ students, schools } : InferGetStaticPropsType<typ
       })
     }
 
-  }, [])
+  }, [windowSize])
 
   function flyTo(LngLat: [number, number]) {
     if (!mapInstance.current) return;
@@ -110,8 +126,8 @@ export default function Home({ students, schools } : InferGetStaticPropsType<typ
             schools.slice(1).map((school, i) => {
               let _students = students.filter(student => student.school_id === school.id)
               return (
-                <div className='flex flex-col p-1 pl-4' key={i}>
-                  <h2 className='font-bold text-lg max-w-[10em] cursor-pointer underline' onClick={() => flyTo(school.coords)}>{ school.name }</h2>
+                <div className='flex flex-col p-1 pl-4 justify-center' key={i}>
+                  <h2 className='font-bold text-lg md:max-w-[10em] cursor-pointer underline' onClick={() => flyTo(school.coords)}>{ school.name }</h2>
                   { _students.map((student, j) => <p className=' pl-3'>{ student.name }</p> )}
                 </div>
               )
@@ -127,7 +143,7 @@ export default function Home({ students, schools } : InferGetStaticPropsType<typ
 
   return (
     <main
-      className={`flex min-h-screen flex-col p-24 ${inter.className}`}
+      className={`flex min-h-screen flex-col md:p-24 p-0 ${inter.className}`}
     >
       <Head>
         <title>Blair Magnet Class of '23 Destinations</title>
@@ -135,9 +151,11 @@ export default function Home({ students, schools } : InferGetStaticPropsType<typ
           href="https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.css"
           rel="stylesheet"
         /> */}
+        <meta name="description" content="A map of where the Blair Magnet Class of 2023 is going to college!!" />
+        <meta property="og:title" content="Blair Magnet '23 Destinations" />
       </Head>
-      <div className="absolute left-0 top-0 w-full h-full" ref={map} />
-      <h1 className={`text-4xl font-bold z-0`}>Blair Magnet Class of '23 Destinations</h1>
+      <div className="md:absolute block left-0 top-0 w-full md:h-full h-[40vh]" ref={map} />
+      <h1 className={`text-4xl font-bold z-0 absolute md:block m-8 md:m-0`}>Blair Magnet Class of '23 Destinations</h1>
 
       {/* <motion.div className={`absolute bottom-0 right-0 py-4 ` 
           + (menuOpen ? `h-screen w-full overflow-y-auto bg-white` 
@@ -167,7 +185,7 @@ export default function Home({ students, schools } : InferGetStaticPropsType<typ
             </div>
           </motion.div>
           :
-          <motion.div className="absolute bottom-0 right-0 py-4 h-full w-60 overflow-y-scroll bg-menu" key="sidebar"
+          <motion.div className="md:absolute block md:bottom-0 right-0 py-4 md:h-full md:w-60 md:overflow-y-scroll w-full bg-menu" key="sidebar"
             // initial={transparent}
             // animate={fadeIn}
             // exit={fadeOut}
@@ -187,15 +205,15 @@ export default function Home({ students, schools } : InferGetStaticPropsType<typ
 
       {
         menuOpen ? 
-        <div className="absolute right-0 top-2 aspect-square w-12 bg-menu rounded-l-lg flex items-center justify-center">
+        <div className="absolute md:flex hidden right-0 top-2 aspect-square w-12 bg-menu rounded-l-lg items-center justify-center" key="menu-open">
           <GrClose className="text-2xl text-black cursor-pointer" onClick={() => setMenuOpen(false)}/>
         </div>
         :
         <>
-        <div className="absolute right-60 top-2 aspect-square w-12 bg-menu rounded-l-lg flex items-center justify-center">
+        <div className="absolute right-60 top-2 aspect-square w-12 bg-menu rounded-l-lg md:flex hidden items-center justify-center" key="menu-close">
           <FaExpandArrowsAlt className="text-2xl text-black cursor-pointer" onClick={() => setMenuOpen(true)}/>
         </div>
-        <p className='absolute bottom-0 right-60 mr-2 text-red-400 cursor-pointer' onClick={flyToReset}>reset</p>
+        <p className='absolute bottom-0 right-60 mr-2 text-red-400 cursor-pointer hidden md:block' onClick={flyToReset}>reset</p>
         </>
       }
 
